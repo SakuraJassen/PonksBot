@@ -21,22 +21,6 @@ async def close(ctx):
     await client.close()
 
 @client.command()
-async def addTile(ctx, argument):
-    Tile.tileList.append(Tile.TileClass(argument, 0))
-    await ctx.send(f'Adding Tile: {argument}')\
-
-@client.command()
-async def setTile(ctx, argument, argument2):
-    found = False
-    for t in Tile.tileList:
-        if t.id == argument:
-            found = True
-            t.refreshTimer = int(argument2)
-            await ctx.send(f'Setting Time of Tile {t.id} to {t.refreshTimer}')
-    if not found:
-        await ctx.send(f'Couldnt find Tile with ID {argument}')
-
-@client.command()
 async def removeTile(ctx, argument):
     ##tileList.remove(Tile(argument))
     await ctx.send(f'notImplementedException()')
@@ -55,7 +39,7 @@ async def load_extensions():
 async def main():
     async with client:
         await load_extensions()
-        await client.start('MTAxMjE4Nzc5NDg2NjcwNDQzNQ.Gha94A.wIQ6Ql3T6A5RuocKSo6Fry9kBaVeK4fhwmZ2LA')
+        await client.start('')
 
 
 asyncio.run(main())
