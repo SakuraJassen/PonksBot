@@ -1,5 +1,7 @@
 import asyncio
 import os
+from datetime import datetime, timedelta
+
 import discord
 from discord.ext import tasks, commands
 
@@ -29,6 +31,33 @@ async def removeTile(ctx, argument):
 async def printTile(ctx):
     for t in Tile.tileList:
         await ctx.send(f'Current Tile: {t.id}')
+
+@client.command()
+async def addTile(ctx, argument):
+    Tile.tileList.append(Tile.TileClass(argument, datetime()))
+    await ctx.send(f'Adding Tile: {argument}')
+
+@client.command()
+async def setTileSeconds(ctx, argument, argument2):
+    found = False
+    for t in Tile.tileList:
+        if t.id == argument:
+            found = True
+            t.refreshTimer = datetime.now() + timedelta(seconds=argument2)
+            await ctx.send(f'Setting Time of Tile {t.id} to {t.refreshTimer}')
+    if not found:
+        await ctx.send(f'Couldnt find Tile with ID {argument}')
+
+@client.command()
+async def setTile(ctx, argument, hours: int, minutes: int, seconds: int):
+    found = False
+    for t in Tile.tileList:
+        if t.id == argument:
+            found = True
+            t.refreshTimer = datetime.now() + timedelta(hours=hours, minutes=minutes, seconds=seconds)
+            await ctx.send(f'Setting Time of Tile {t.id} to {t.refreshTimer}')
+    if not found:
+        await ctx.send(f'Couldnt find Tile with ID {argument}')
 
 async def load_extensions():
     for filename in os.listdir("./cogs"):
