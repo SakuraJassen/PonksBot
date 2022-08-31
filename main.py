@@ -31,10 +31,7 @@ async def load_extensions():
 async def main():
     async with client:
         await load_extensions()
-        await client.start('MTAxMjE4Nzc5NDg2NjcwNDQzNQ.GKr1jj.-ZC9IkT4D4wpr--69pIj-wFYyp1KoTf4zHakI8')
-        # # MTAxMzQxODgyNzQ0ODU4NjMxMA.GoI5VA.AwnxgdIBlBmIVO25sSEl62ypdsZSPSdv6ICa7k
-        # # MTAxMzQxODgyNzQ0ODU4NjMxMA.GoI5VA.AwnxgdIBlBmIVO25sSEl62ypdsZSPSdv6ICa7k
-        # #
+        await client.start('')
 
 
 asyncio.run(main())
