@@ -73,7 +73,7 @@ class MainCog(commands.Cog):
             print('Ignoring exception in command {}:'.format(ctx.command), file=sys.stderr)
             traceback.print_exception(type(error), error, error.__traceback__, file=sys.stderr)
 
-    @tasks.loop(seconds=60*2)
+    @tasks.loop(seconds=60*5)
     async def update_time(self):
         await self.client.change_presence(activity=discord.Game(name="Is thinking..."))
         for t in Tile.tileList:
@@ -101,7 +101,7 @@ class MainCog(commands.Cog):
                     await t.message.edit(content=f"Tile: {t.id} | Expired")
 
             print("sleeping...")
-            await asyncio.sleep(1)
+            await asyncio.sleep(5)
 
         await self.client.change_presence(activity=discord.Game(name="Bedge..."))
 
@@ -127,7 +127,7 @@ class MainCog(commands.Cog):
                     # await msg.add_reaction("❌")
                 else:
                     timeToSec = sum(x * int(t) for x, t in zip([3600, 60, 1], parsed.group(2).split(":")))
-                    Tile.tileList.append(Tile.TileClass(parsed.group(1), timedelta(seconds=timeToSec)))
+                    Tile.tileList.append(Tile.TileClass(parsed.group(1),datetime.now() + timedelta(seconds=timeToSec)))
                     Tile.tileList[-1].message = msg
 
 

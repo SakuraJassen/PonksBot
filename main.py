@@ -34,7 +34,7 @@ async def printTile(ctx):
 
 @client.command()
 async def addTile(ctx, argument):
-    Tile.tileList.append(Tile.TileClass(argument, datetime()))
+    Tile.tileList.append(Tile.TileClass(argument,  timedelta(seconds=0)))
     await ctx.send(f'Adding Tile: {argument}')
 
 @client.command()
