@@ -1,8 +1,8 @@
 import asyncio
+import random
 import sys
 import traceback
 from datetime import datetime, timedelta
-import re
 
 import discord
 from discord.ext import tasks, commands
@@ -14,10 +14,10 @@ class MainCog(commands.Cog):
     def __init__(self, bot):
         self.client = bot
         self.update_time.start()
-        self.tileChannel = 0
+        self.tileChannel = None
 
     def cog_unload(self):
-        self.updateTime.cancel()
+        self.update_time.cancel()
 
     @commands.command()
     async def pingTile(self, ctx):
@@ -72,63 +72,50 @@ class MainCog(commands.Cog):
             # All other Errors not returned come here. And we can just print the default TraceBack.
             print('Ignoring exception in command {}:'.format(ctx.command), file=sys.stderr)
             traceback.print_exception(type(error), error, error.__traceback__, file=sys.stderr)
+            await self.client.change_presence(activity=discord.Game(name="deadlole"))
 
-    @tasks.loop(seconds=60*5)
+    @tasks.loop(seconds=10)
     async def update_time(self):
-        await self.client.change_presence(activity=discord.Game(name="Is thinking..."))
-        for t in Tile.tileList:
-            print(f"updating tile: {t.id}")
+        for t in Tile.TileList:
+            print(f"looking at tile: {t.id}")
             if t.message == 0:
                 t.message = await self.tileChannel.send(f"Tile: {t.id}")
                 await t.message.add_reaction("♻️")
 
-            cache_msg = await t.message.channel.fetch_message(t.message.id)
-            for reaction in cache_msg.reactions:
-                if str(reaction.emoji) == "♻️" and reaction.count > 1:
-                    t.refreshTimer = datetime.now() + timedelta(hours=28)
-                    await reaction.clear()
-                    await t.message.add_reaction("♻️")
-
-            if isinstance(t.refreshTimer, datetime):
-                if t.refreshTimer.timestamp() > 0:
-                    s = t.refreshTimer - datetime.now()
-                    s = s.seconds + s.days*24*60*60
-                    hours, remainder = divmod(s, 3600)
-                    minutes, seconds = divmod(remainder, 60)
-                    expIn = '{:02}:{:02}:{:02}'.format(int(hours), int(minutes), int(seconds))
-                    await t.message.edit(content=f"Tile: {t.id} | Expires in: {expIn}")
-                else:
-                    await t.message.edit(content=f"Tile: {t.id} | Expired")
-
-            print("sleeping...")
-            await asyncio.sleep(5)
-
-        await self.client.change_presence(activity=discord.Game(name="Bedge..."))
+            # Only update Tile with a Timer and where the last Update is more than 5 Seconds ago
+            totalSinceLastUpdate = (datetime.now() - t.lastUpdate).total_seconds()
+            if isinstance(t.refreshTimer, datetime) and t.refreshTimer < t.lastUpdate and totalSinceLastUpdate > 90 + int(random.random() * 10):
+                print(f"updating tile: {t.id}")
+                t.lastUpdate = datetime.now()
+                s = await Tile.formateMSG(t)
+                await t.message.edit(content=s)
+                await asyncio.sleep(1)
+                print(f"... Time since last Update: {totalSinceLastUpdate}")
+        await asyncio.sleep(1)
+        print("sleeping...")
 
     @update_time.before_loop
     async def before_update_time(self):
         print('waiting...')
         await self.client.wait_until_ready()
-        if self.tileChannel == 0:
+        if self.tileChannel is None:
             print("Searching Channel")
             channel = discord.utils.get(self.client.get_all_channels(), name='tile-refresh')
             self.tileChannel = channel
-            print(f"Fround channel {self.tileChannel}")
+            print(f"Found channel {self.tileChannel}")
 
             async for msg in channel.history(limit=200):
-                parsed = re.search('.*?: (.*?) \| .*: (.*)', msg.content)
-                if parsed is None:
-                    parsed2 = re.search('.*?: (.*?) \| .*', msg.content)
-                    if parsed2 is None:
-                        print(F"Parsing Error at {msg.content}")
+                parsed = await Tile.parseMSG(msg.content)
+                if parsed is not None:
+                    if len(parsed.groups()) == 1:
+                        Tile.TileList.append(Tile.TileClass(parsed.group(1), Tile.TileType.EMPTY, timedelta(seconds=0)))
+                        Tile.TileList[-1].message = msg
+                    elif len(parsed.groups()) == 2:
+                        timeToSec = sum(x * int(t) for x, t in zip([3600, 60, 1], parsed.group(2).split(":")))
+                        Tile.TileList.append(Tile.TileClass(parsed.group(1), Tile.TileType.EMPTY, datetime.now() + timedelta(seconds=timeToSec)))
+                        Tile.TileList[-1].message = msg
                     else:
-                        Tile.tileList.append(Tile.TileClass(parsed2.group(1), timedelta(seconds=0)))
-                        Tile.tileList[-1].message = msg
-                    # await msg.add_reaction("❌")
-                else:
-                    timeToSec = sum(x * int(t) for x, t in zip([3600, 60, 1], parsed.group(2).split(":")))
-                    Tile.tileList.append(Tile.TileClass(parsed.group(1),datetime.now() + timedelta(seconds=timeToSec)))
-                    Tile.tileList[-1].message = msg
+                        print(f"couldn't ParseTile: {msg.content}")
 
 
 async def setup(bot):

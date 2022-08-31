@@ -22,43 +22,6 @@ async def close(ctx):
     await ctx.send('Exiting...')
     await client.close()
 
-@client.command()
-async def removeTile(ctx, argument):
-    ##tileList.remove(Tile(argument))
-    await ctx.send(f'notImplementedException()')
-
-@client.command()
-async def printTile(ctx):
-    for t in Tile.tileList:
-        await ctx.send(f'Current Tile: {t.id}')
-
-@client.command()
-async def addTile(ctx, argument):
-    Tile.tileList.append(Tile.TileClass(argument,  timedelta(seconds=0)))
-    await ctx.send(f'Adding Tile: {argument}')
-
-@client.command()
-async def setTileSeconds(ctx, argument, argument2):
-    found = False
-    for t in Tile.tileList:
-        if t.id == argument:
-            found = True
-            t.refreshTimer = datetime.now() + timedelta(seconds=argument2)
-            await ctx.send(f'Setting Time of Tile {t.id} to {t.refreshTimer}')
-    if not found:
-        await ctx.send(f'Couldnt find Tile with ID {argument}')
-
-@client.command()
-async def setTile(ctx, argument, hours: int, minutes: int, seconds: int):
-    found = False
-    for t in Tile.tileList:
-        if t.id == argument:
-            found = True
-            t.refreshTimer = datetime.now() + timedelta(hours=hours, minutes=minutes, seconds=seconds)
-            await ctx.send(f'Setting Time of Tile {t.id} to {t.refreshTimer}')
-    if not found:
-        await ctx.send(f'Couldnt find Tile with ID {argument}')
-
 async def load_extensions():
     for filename in os.listdir("./cogs"):
         if filename.endswith(".py"):
@@ -68,7 +31,10 @@ async def load_extensions():
 async def main():
     async with client:
         await load_extensions()
-        await client.start('')
+        await client.start('MTAxMjE4Nzc5NDg2NjcwNDQzNQ.GKr1jj.-ZC9IkT4D4wpr--69pIj-wFYyp1KoTf4zHakI8')
+        # # MTAxMzQxODgyNzQ0ODU4NjMxMA.GoI5VA.AwnxgdIBlBmIVO25sSEl62ypdsZSPSdv6ICa7k
+        # # MTAxMzQxODgyNzQ0ODU4NjMxMA.GoI5VA.AwnxgdIBlBmIVO25sSEl62ypdsZSPSdv6ICa7k
+        # #
 
 
 asyncio.run(main())
