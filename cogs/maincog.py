@@ -84,7 +84,7 @@ class MainCog(commands.Cog):
 
             # Only update Tile with a Timer and where the last Update is more than 5 Seconds ago
             totalSinceLastUpdate = (datetime.now() - t.lastUpdate).total_seconds()
-            if isinstance(t.refreshTimer, datetime) and t.refreshTimer < t.lastUpdate and totalSinceLastUpdate > 90 + int(random.random() * 10):
+            if isinstance(t.refreshTimer, datetime) and totalSinceLastUpdate > 90 + int(random.random() * 10):
                 print(f"updating tile: {t.id}")
                 t.lastUpdate = datetime.now()
                 s = await Tile.formateMSG(t)
