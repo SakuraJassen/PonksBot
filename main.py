@@ -15,7 +15,7 @@ Tile.init()
 
 @client.command()
 async def ping(ctx):
-    await ctx.send('pong')
+    await ctx.send('pong!')
 
 @client.command()
 async def close(ctx):
