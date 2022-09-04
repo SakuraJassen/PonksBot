@@ -21,7 +21,7 @@ class MainCog(commands.Cog):
 
     @commands.command()
     async def pingTile(self, ctx):
-        await ctx.send('pong pog5')
+        await ctx.send('pong pog6')
 
     @commands.Cog.listener()
     async def on_command_error(self, ctx, error):
