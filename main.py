@@ -23,15 +23,16 @@ async def close(ctx):
     await client.close()
 
 async def load_extensions():
-    for filename in os.listdir("./cogs"):
+    for filename in os.listdir("/home/pi/PonksBot/cogs"): # Changed Absolute path /home/pi/PonksBot/cogs"
         if filename.endswith(".py"):
             # cut off the .py from the file name
             await client.load_extension(f"cogs.{filename[:-3]}")
 
 async def main():
+    token = open("/home/pi/PonksBot/token")
     async with client:
         await load_extensions()
-        await client.start('')
+        await client.start(token.read())
 
 
 asyncio.run(main())
