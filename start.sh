@@ -1,6 +1,9 @@
 #!/bin/bash
+cd "${0%/*}"
 if ! pgrep -f main.py ;
 then
-  git --git-dir=/home/pi/PonksBot/.git pull --force
-  nohup python /home/pi/PonksBot/main.py > /home/pi/PonksBot/botlog.out
+  git reset --hard origin/master
+  git pull
+#git --git-dir=/home/pi/PonksBot/.git pull --force
+  nohup python main.py > botlog.out
 fi
