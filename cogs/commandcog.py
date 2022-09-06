@@ -11,7 +11,7 @@ import Tile
 
 class CommandCog(commands.Cog):
     def __init__(self, bot):
-        self.client = bot
+        self.bot = bot
         self.update_time.start()
         self.tileChannel = None
 
@@ -117,15 +117,15 @@ class CommandCog(commands.Cog):
 
     @commands.Cog.listener()
     async def on_raw_reaction_add(self, payload: discord.RawReactionActionEvent):
-        if payload.user_id != self.client.user.id and self.tileChannel.id == payload.channel_id:
+        if payload.user_id != self.bot.user.id and self.tileChannel.id == payload.channel_id:
             msg_id = payload.message_id
             emoji = payload.emoji
             channel = self.tileChannel
             message = await channel.fetch_message(payload.message_id)
 
-            user = self.client.get_user(payload.user_id)
+            user = self.bot.get_user(payload.user_id)
             if not user:
-                user = await self.client.fetch_user(payload.user_id)
+                user = await self.bot.fetch_user(payload.user_id)
             # instead of reaction we should use payload.emoji
             # for example:
             if str(emoji) == "♻️":
@@ -148,13 +148,16 @@ class CommandCog(commands.Cog):
     @update_time.before_loop
     async def before_update_time(self):
         print('waiting...')
-        await self.client.wait_until_ready()
-        if self.tileChannel is None:
-            print("Searching Channel")
-            channel = discord.utils.get(self.client.get_all_channels(), name='tile-refresh')
+        await self.bot.wait_until_ready()
+        maincog = self.bot.get_cog('MainCog')
+        if maincog.tileChannel is None:
+            print("Searching Channel cmd")
+            channel = discord.utils.get(self.bot.get_all_channels(), name='tile-refresh')
             self.tileChannel = channel
             print(f"Found channel {self.tileChannel}")
-
+        else:
+            self.tileChannel = maincog.tileChannel
+            print(f"Got channel {self.tileChannel} from main cog")
 
 async def setup(bot):
     await bot.add_cog(CommandCog(bot))

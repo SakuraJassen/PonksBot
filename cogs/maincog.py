@@ -12,7 +12,7 @@ import Tile
 
 class MainCog(commands.Cog):
     def __init__(self, bot):
-        self.client = bot
+        self.bot = bot
         self.update_time.start()
         self.tileChannel = None
 
@@ -72,7 +72,7 @@ class MainCog(commands.Cog):
             # All other Errors not returned come here. And we can just print the default TraceBack.
             print('Ignoring exception in command {}:'.format(ctx.command), file=sys.stderr)
             traceback.print_exception(type(error), error, error.__traceback__, file=sys.stderr)
-            await self.client.change_presence(activity=discord.Game(name="deadlole"))
+            await self.bot.change_presence(activity=discord.Game(name="deadlole"))
 
     @tasks.loop(seconds=10)
     async def update_time(self):
@@ -97,10 +97,10 @@ class MainCog(commands.Cog):
     @update_time.before_loop
     async def before_update_time(self):
         print('waiting...')
-        await self.client.wait_until_ready()
+        await self.bot.wait_until_ready()
         if self.tileChannel is None:
             print("Searching Channel")
-            channel = discord.utils.get(self.client.get_all_channels(), name='tile-refresh')
+            channel = discord.utils.get(self.bot.get_all_channels(), name='tile-refreshdev')
             self.tileChannel = channel
             print(f"Found channel {self.tileChannel}")
 
