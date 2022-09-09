@@ -4,66 +4,166 @@ import traceback
 from datetime import datetime, timedelta
 
 import discord
-from discord.ext import tasks, commands
+from discord.ext import commands
 
-import Tile
-
+import TileSQL
 
 class CommandCog(commands.Cog):
     def __init__(self, bot):
+        self.db = None
         self.bot = bot
-        self.update_time.start()
         self.tileChannel = None
+        self.maincog = None
 
     def cog_unload(self):
-        self.update_time.cancel()
-
-    @commands.group(invoke_without_command=True)
-    async def tile(self, ctx):
-        if ctx.invoked_subcommand is None:
-            await ctx.send('Invalid sub command passed...')
+        self.bot = None
 
     @commands.command()
     async def pingCommand(self, ctx):
         await ctx.send('pong')
 
-    @tile.command()
-    async def remove(self, ctx, argument):
-        ##TileList.remove(Tile(argument))
+    @commands.command()
+    async def fillTile(self, ctx):
+        self.maincog.TileList = []
+        for x in ("DAA", "DBA", "DCA", "DDA", "DAB", "DEA", "DFA", "DBB", "DCB", "DGA", "EGA", "DDB", "DAC", "DEB", "CFA", "EEA", "DFB", "DBC", "DCC", "CFB", "CDA", "ECA", "EEB", "DDC", "DAD", "DEC", "CDB", "CBA", "EAA", "ECB", "EEC", "DBD", "DCD", "CDC", "CBB", "CAA", "EAB", "ECC", "DDD", "DAE", "CDD", "CBC", "CAB", "EBA", "EAC", "ECD", "DBE", "DCE", "CBD", "CAC", "CCA", "EBB", "EAD", "ECE", "DAF", "CBE", "CAD", "CCB", "EDA", "EBC", "EAE", "DBF", "CBF", "CAE", "CCC", "CEA", "EDB", "EBD", "EAF", "DAG", "CAF", "CCD", "CEB", "EFA", "EDC", "EBE", "EAG", "CAG", "CCE", "CEC", "CGA", "EFB", "EDD", "EBF", "MRX", "BBF", "BDD", "BFB", "FGA", "FEC", "FCE", "FAH", "BAG", "BBE", "BDC", "BFA", "FEB", "FCD", "FAF", "AAG", "DAF", "BBD", "BDB", "FEA", "FCC", "FAE", "FBF", "ABF", "BAE", "BBC", "BDA", "FCB", "FAD", "FBE", "AAF", "BCE", "BAD", "BBB", "FCA", "FAC", "FBD", "ACA", "ABE", "BCD", "BAC", "BBA", "FAB", "FBC", "FDD", "AAE", "ADD", "BCC", "BAB", "FAA", "FBB", "FDC", "ACD", "ABD", "BEC", "BCB", "BAA", "FBA", "FDB", "AEC", "AAD", "ADC", "BEB", "BCA", "FDA", "FFB", "ACC", "ABC", "AFB", "BEA", "FFA", "AEB", "AAC", "ADB", "BGA", "AGA", "ACB", "ABB", "AFA", "AEA", "AAB", "ADA", "ACA", "ABA", "AAA", ):
+            self.maincog.TileList.append(TileSQL.TileClass(self.db, x))
+        await TileSQL.updateTileList(self.db, self.maincog.TileList)
+        await ctx.send('Reseted list')
+
+    @commands.group(invoke_without_command=True)
+    async def tt(self, ctx):
+        if ctx.invoked_subcommand is None:
+            await ctx.send('Invalid sub command passed...')
+
+    @tt.command()
+    async def Empty(self, ctx, tilecode):
+        found = False
+        for t in self.maincog.TileList:
+            if t.id == tilecode:
+                found = True
+                t.type = TileSQL.TileType.EMPTY
+                await TileSQL.createOrUpdateNewTile(self.db, t)
+                await ctx.send(f'Setting Type of Tile {t.id} to Empty')
+        if not found:
+            await ctx.send(f'Couldnt find Tile with ID {tilecode}')
+
+    @tt.command()
+    async def Relic(self, ctx, tilecode):
+        found = False
+        for t in self.maincog.TileList:
+            if t.id == tilecode:
+                found = True
+                t.type = TileSQL.TileType.RELIC
+                await TileSQL.createOrUpdateNewTile(self.db, t)
+                await ctx.send(f'Setting Type of Tile {t.id} to Relic')
+        if not found:
+            await ctx.send(f'Couldnt find Tile with ID {tilecode}')
+
+    @tt.command()
+    async def Banner(self, ctx, tilecode):
+        found = False
+        for t in self.maincog.TileList:
+            if t.id == tilecode:
+                found = True
+                t.type = TileSQL.TileType.BANNER
+                await TileSQL.createOrUpdateNewTile(self.db, t)
+                await ctx.send(f'Setting Type of Tile {t.id} to Banner')
+        if not found:
+            await ctx.send(f'Couldnt find Tile with ID {tilecode}')
+
+    @tt.command()
+    async def Ours(self, ctx, tilecode):
+        found = False
+        for t in self.maincog.TileList:
+            if t.id == tilecode:
+                found = True
+                await TileSQL.createOrUpdateNewTile(self.db, t)
+                await ctx.send(f'Setting Type of Tile {t.id} to Banner')
+        if not found:
+            await ctx.send(f'Couldnt find Tile with ID {tilecode}')
+
+    @commands.group(invoke_without_command=True)
+    async def t(self, ctx):
+        if ctx.invoked_subcommand is None:
+            await ctx.send('Invalid sub command passed...')
+
+    @t.command()
+    async def rmmsgid(self, ctx, argument):
+        tile = await TileSQL.findByTileCode(self.db, argument)
+        tile.msg_id = None
+        TileSQL.createOrUpdateNewTile(self.db, tile)
         await ctx.send(f'notImplementedException()')
 
-    @tile.command()
+    @t.command()
+    async def remove(self, ctx, argument):
+        await TileSQL.deleteTile(self.db, argument)
+        await ctx.send(f'removed tile {argument}')
+
+    @t.command()
     async def list(self, ctx):
-        for t in Tile.TileList:
-            await ctx.send(f'Tile: {t.id}')
+        rt = ""
+        for t in self.maincog.TileList:
+            rt += f'{t.toString()}\r\n\r\n'
+        await ctx.send(rt)
 
-    @tile.command()
-    async def add(self, ctx, argument):
-        Tile.TileList.append(Tile.TileClass(argument, Tile.TileType.EMPTY, timedelta(seconds=0)))
-        await ctx.send(f'Adding Tile: {argument}')
+    @t.command()
+    async def add(self, ctx, t_id):
+        self.maincog.TileList.append(TileSQL.TileClass(self.db, t_id))
+        await ctx.send(f'Adding Tile: {t_id}')
 
-    @tile.command()
+    @t.command()
+    async def commit(self, ctx):
+        await TileSQL.updateTileList(self.db, self.maincog.TileList)
+        await ctx.send(f'Committing TileList..')
+
+    @t.command()
+    async def update(self, ctx):
+        tl = await TileSQL.getAllTiles(self.db, self.tileChannel)
+        self.maincog.TileList = tl
+        await ctx.send(f'Getting TileList..')
+
+    @t.command()
     async def setSec(self, ctx, argument, argument2):
         found = False
-        for t in Tile.TileList:
+        for t in self.maincog.TileList:
             if t.id == argument:
                 found = True
                 t.refreshTimer = datetime.now() + timedelta(seconds=argument2)
+                await TileSQL.createOrUpdateNewTile(self.db, t)
                 await ctx.send(f'Setting Time of Tile {t.id} to {t.refreshTimer}')
         if not found:
             await ctx.send(f'Couldnt find Tile with ID {argument}')
 
-    @tile.command()
+    @t.command()
     async def set(self, ctx, argument, hours: int, minutes: int, seconds: int):
         found = False
-        for t in Tile.TileList:
+        for t in self.maincog.TileList:
             if t.id == argument:
                 found = True
                 t.refreshTimer = datetime.now() + timedelta(hours=hours, minutes=minutes, seconds=seconds)
                 t.lastUpdate = datetime.min
+                await TileSQL.createOrUpdateNewTile(self.db, t)
                 await ctx.send(f'Setting Time of Tile {t.id} to {t.refreshTimer}')
         if not found:
             await ctx.send(f'Couldnt find Tile with ID {argument}')
+
+    @commands.Cog.listener()
+    async def on_ready(self):
+        print('waiting...')
+        await self.bot.wait_until_ready()
+        self.maincog = self.bot.get_cog('MainCog')
+        if self.maincog.tileChannel is None:
+            print("Searching Channel cmd")
+            channel = discord.utils.get(self.bot.get_all_channels(), name='tile-refresh')
+            self.tileChannel = channel
+            print(f"Found channel {self.tileChannel}")
+        else:
+            self.tileChannel = self.maincog.tileChannel
+            print(f"Got channel {self.tileChannel} from main cog")
+
+        while self.maincog.db is None:
+            await asyncio.sleep(delay=1)
+        self.db = self.maincog.db
 
     @commands.Cog.listener()
     async def on_command_error(self, ctx, error):
@@ -129,35 +229,26 @@ class CommandCog(commands.Cog):
             # instead of reaction we should use payload.emoji
             # for example:
             if str(emoji) == "♻️":
-                t = await Tile.findByMSGID(msg_id)
-                print(f"refreshing tile: {t.id}")
-                t.refreshTimer = datetime.now() + timedelta(hours=28)
-                t.lastUpdate = datetime.now()
-                await t.message.edit(content=await Tile.formateMSG(t))
                 await message.remove_reaction(payload.emoji, user)
-                await asyncio.sleep(2)
+                try:
+                    t = await TileSQL.findByMSGID(self.db, msg_id)
+                except BaseException as err:
+                    print(f"Unexpected {err=}, {type(err)=}")
+
+                if t is None:
+                    print("couldn't find Tile")
+                else:
+                    print(f"refreshing tile: {t.id}")
+                    t.refreshTimer = datetime.now() + timedelta(hours=28)
+                    t.shouldUpdate = True
+                    t.lastUpdate = datetime.now()
+                    await TileSQL.createOrUpdateNewTile(self.db, t)
+                    await t.message.edit(content=await TileSQL.formateMSG(t))
+                    await asyncio.sleep(1)
             elif str(emoji) == "a":
                 print(str(emoji))
             else:
                 print(str(emoji))
-
-    @tasks.loop(seconds=999999)
-    async def update_time(self):
-        self.update_time.stop()
-
-    @update_time.before_loop
-    async def before_update_time(self):
-        print('waiting...')
-        await self.bot.wait_until_ready()
-        maincog = self.bot.get_cog('MainCog')
-        if maincog.tileChannel is None:
-            print("Searching Channel cmd")
-            channel = discord.utils.get(self.bot.get_all_channels(), name='tile-refresh')
-            self.tileChannel = channel
-            print(f"Found channel {self.tileChannel}")
-        else:
-            self.tileChannel = maincog.tileChannel
-            print(f"Got channel {self.tileChannel} from main cog")
 
 async def setup(bot):
     await bot.add_cog(CommandCog(bot))
