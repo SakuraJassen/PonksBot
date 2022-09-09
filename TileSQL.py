@@ -27,7 +27,8 @@ class TileType(IntFlag):
                     for f in list(TileType):
                         if (f & flag) > 0:
                             s += f"{f.name.capitalize()}, "
-        return s[:-2]
+                    return s[:-2]
+        return s
 
 
 class TileClass:
