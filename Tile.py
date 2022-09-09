@@ -26,9 +26,10 @@ class TileType(Flag):
 class TileClass:
     def __init__(self, ident, tileType: TileType, refresh: datetime.datetime):
         self.id = ident
+        self.msg = ""
         self.type = tileType
         self.refreshTimer = refresh
-        self.message = 0
+        self.msgid = 0
         self.shouldUpdate = False
         self.lastUpdate = datetime.datetime.now()
 

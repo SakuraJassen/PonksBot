@@ -6,15 +6,21 @@ from datetime import datetime, timedelta
 
 import discord
 from discord.ext import tasks, commands
-
-import Tile
-
+import MySQLdb
+import TileSQL
 
 class MainCog(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
+        self.db = None
+        try:
+            self.db = MySQLdb.connect(user='botuser', password='SlFs2020', host='192.168.0.69', database='bot')
+        except MySQLdb.Error as err:
+            print(err)
+
         self.update_time.start()
         self.tileChannel = None
+        self.TileList = []
 
     def cog_unload(self):
         self.update_time.cancel()
@@ -22,6 +28,17 @@ class MainCog(commands.Cog):
     @commands.command()
     async def pingTile(self, ctx):
         await ctx.send('pong pog11')
+
+    @commands.Cog.listener()
+    async def on_ready(self):
+        await self.bot.wait_until_ready()
+        if self.tileChannel is None:
+            print("Searching Channel")
+            channel = discord.utils.get(self.bot.get_all_channels(), name='tile-refreshdev')
+            self.tileChannel = channel
+            print(f"Found channel {self.tileChannel}")
+
+        self.TileList = TileSQL.getAllTiles(self.db, self.tileChannel)
 
     @commands.Cog.listener()
     async def on_command_error(self, ctx, error):
@@ -76,47 +93,48 @@ class MainCog(commands.Cog):
 
     @tasks.loop(seconds=10)
     async def update_time(self):
-        for t in Tile.TileList:
+        while self.db is None:
+            print("couldn't connect to database retrying...")
+            self.db = MySQLdb.connect(user='botuser', password='SlFs2020', host='192.168.0.69', database='bot')
+
+            await asyncio.sleep(1)
+
+        tl = await TileSQL.getAllTiles(self.db, self.tileChannel)
+        self.TileList = tl
+        for t in self.TileList:
             print(f"looking at tile: {t.id}")
-            if t.message == 0:
+            if t.msg_id == 0 or t.msg_id is None:
                 t.message = await self.tileChannel.send(f"Tile: {t.id}")
+                t.msg_id = t.message.id
                 await t.message.add_reaction("♻️")
+
+            if t.message is None:
+                try:
+                    t.message = await self.tileChannel.fetch_message(t.msg_id)
+                except discord.NotFound:
+                    t.message = await self.tileChannel.send(f"Tile: {t.id}")
+                    t.msg_id = t.message.id
+                    await t.message.add_reaction("♻️")
 
             # Only update Tile with a Timer and where the last Update is more than 5 Seconds ago
             totalSinceLastUpdate = (datetime.now() - t.lastUpdate).total_seconds()
-            if isinstance(t.refreshTimer, datetime) and totalSinceLastUpdate > 90 + int(random.random() * 10):
+            print(f"... Time since last Update: {totalSinceLastUpdate}")
+            if t.shouldUpdate or (isinstance(t.refreshTimer, datetime) and totalSinceLastUpdate > 90 + int(random.random() * 10)):
+                t.shouldUpdate = False
                 print(f"updating tile: {t.id}")
                 t.lastUpdate = datetime.now()
-                s = await Tile.formateMSG(t)
+                s = await TileSQL.formateMSG(t)
                 await t.message.edit(content=s)
                 await asyncio.sleep(1)
-                print(f"... Time since last Update: {totalSinceLastUpdate}")
+
         await asyncio.sleep(1)
+        await TileSQL.updateTileList(self.db, self.TileList)
         print("sleeping...")
 
     @update_time.before_loop
     async def before_update_time(self):
         print('waiting...')
         await self.bot.wait_until_ready()
-        if self.tileChannel is None:
-            print("Searching Channel")
-            channel = discord.utils.get(self.bot.get_all_channels(), name='tile-refreshdev')
-            self.tileChannel = channel
-            print(f"Found channel {self.tileChannel}")
-
-            async for msg in channel.history(limit=200):
-                parsed = await Tile.parseMSG(msg.content)
-                if parsed is not None:
-                    if len(parsed.groups()) == 1:
-                        Tile.TileList.append(Tile.TileClass(parsed.group(1), Tile.TileType.EMPTY, timedelta(seconds=0)))
-                        Tile.TileList[-1].message = msg
-                    elif len(parsed.groups()) == 2:
-                        timeToSec = sum(x * int(t) for x, t in zip([3600, 60, 1], parsed.group(2).split(":")))
-                        Tile.TileList.append(Tile.TileClass(parsed.group(1), Tile.TileType.EMPTY, datetime.now() + timedelta(seconds=timeToSec)))
-                        Tile.TileList[-1].message = msg
-                    else:
-                        print(f"couldn't ParseTile: {msg.content}")
-
 
 async def setup(bot):
     await bot.add_cog(MainCog(bot))
