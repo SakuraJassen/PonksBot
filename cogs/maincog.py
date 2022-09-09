@@ -34,7 +34,7 @@ class MainCog(commands.Cog):
         await self.bot.wait_until_ready()
         if self.tileChannel is None:
             print("Searching Channel")
-            channel = discord.utils.get(self.bot.get_all_channels(), name='tile-refreshdev')
+            channel = discord.utils.get(self.bot.get_all_channels(), name='tile-refresh')
             self.tileChannel = channel
             print(f"Found channel {self.tileChannel}")
 
@@ -91,7 +91,7 @@ class MainCog(commands.Cog):
             traceback.print_exception(type(error), error, error.__traceback__, file=sys.stderr)
             await self.bot.change_presence(activity=discord.Game(name="deadlole"))
 
-    @tasks.loop(seconds=10)
+    @tasks.loop(seconds=30)
     async def update_time(self):
         while self.db is None:
             print("couldn't connect to database retrying...")
@@ -122,10 +122,10 @@ class MainCog(commands.Cog):
             if t.shouldUpdate or (isinstance(t.refreshTimer, datetime) and totalSinceLastUpdate > 90 + int(random.random() * 10)):
                 t.shouldUpdate = False
                 print(f"updating tile: {t.id}")
-                t.lastUpdate = datetime.now()
+                t.lastUpdate = datetime.now() + timedelta(seconds=int(random.random() * 120))
                 s = await TileSQL.formateMSG(t)
                 await t.message.edit(content=s)
-                await asyncio.sleep(1)
+                #await asyncio.sleep(1)
 
         await asyncio.sleep(1)
         await TileSQL.updateTileList(self.db, self.TileList)
