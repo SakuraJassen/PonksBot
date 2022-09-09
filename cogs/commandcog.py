@@ -229,8 +229,8 @@ class CommandCog(commands.Cog):
             # instead of reaction we should use payload.emoji
             # for example:
             if str(emoji) == "♻️":
-                await message.remove_reaction(payload.emoji, user)
                 try:
+                    await message.remove_reaction(payload.emoji, user)
                     t = await TileSQL.findByMSGID(self.db, msg_id)
                 except BaseException as err:
                     print(f"Unexpected {err=}, {type(err)=}")
@@ -238,9 +238,17 @@ class CommandCog(commands.Cog):
                 if t is None:
                     print("couldn't find Tile")
                 else:
+                    if t.message is None:
+                        try:
+                            t.message = await self.tileChannel.fetch_message(t.msg_id)
+                        except discord.NotFound:
+                            t.message = await self.tileChannel.send(f"Tile: {t.id}")
+                            t.msg_id = t.message.id
+                            await t.message.add_reaction("♻️")
+
                     print(f"refreshing tile: {t.id}")
                     t.refreshTimer = datetime.now() + timedelta(hours=28)
-                    t.shouldUpdate = True
+                    t.shouldUpdate = False
                     t.lastUpdate = datetime.now()
                     await TileSQL.createOrUpdateNewTile(self.db, t)
                     await t.message.edit(content=await TileSQL.formateMSG(t))
