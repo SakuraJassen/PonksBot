@@ -17,13 +17,16 @@ class TileType(IntFlag):
     @staticmethod
     async def toString(flag):
         s = ""
-        if flag is not TileType.EMPTY:
-            if flag.name is not None:
-                s = flag.name.capitalize()
-            else:
-                for f in list(TileType):
-                    if (f & flag) > 0:
-                        s += f"{f.name.capitalize()}, "
+        if isinstance(flag, int):
+            flag = TileType(flag)
+        if isinstance(flag, TileType):
+            if flag is not TileType.EMPTY:
+                if flag.name is not None:
+                    s = flag.name.capitalize()
+                else:
+                    for f in list(TileType):
+                        if (f & flag) > 0:
+                            s += f"{f.name.capitalize()}, "
         return s[:-2]
 
 
