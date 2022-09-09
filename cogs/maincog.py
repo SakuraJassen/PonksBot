@@ -38,7 +38,7 @@ class MainCog(commands.Cog):
             self.tileChannel = channel
             print(f"Found channel {self.tileChannel}")
 
-        self.TileList = TileSQL.getAllTiles(self.db, self.tileChannel)
+        self.TileList = await TileSQL.getAllTiles(self.db, self.tileChannel)
 
     @commands.Cog.listener()
     async def on_command_error(self, ctx, error):
