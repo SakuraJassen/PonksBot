@@ -120,7 +120,7 @@ class MainCog(commands.Cog):
             totalSinceLastUpdate = (datetime.now() - t.lastUpdate).total_seconds()
             updateThreshhole = (20 * 60) + int(random.random() * 10)
             print(f"... Time since last Update: {totalSinceLastUpdate} / {updateThreshhole}")
-            if t.shouldUpdate or (isinstance(t.refreshTimer, datetime) and totalSinceLastUpdate > (20 * 60) + int(random.random() * 10)):
+            if t.shouldUpdate or (isinstance(t.refreshTimer, datetime) and totalSinceLastUpdate > (20 * 60) + int(random.random() * 120)):
                 t.shouldUpdate = False
                 print(f"updating tile: {t.id}")
                 t.lastUpdate = datetime.now() + timedelta(seconds=int(random.random() * 600))

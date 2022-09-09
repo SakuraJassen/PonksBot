@@ -75,7 +75,7 @@ async def formateMSG(t: TileClass):
     if hours >= 24:
         expAt = t.refreshTimer.strftime('%d.%m - %H:%M:%S')
     else:
-        expAt = t.refreshTimer.strftime('        %H:%M:%S')
+        expAt = t.refreshTimer.strftime('%d.%m - %H:%M:%S')
 
     if ts.total_seconds() > 0:
         expIn = '{:02}:{:02}:{:02}'.format(int(hours), int(minutes), int(seconds))
